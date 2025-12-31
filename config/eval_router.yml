@@ -1,0 +1,14 @@
+task: "router"
+
+model_name: "microsoft/phi-3-mini-4k-instruct"
+
+data_set: "val"
+with_lora: true
+
+generate_params:
+  max_new_tokens: 32
+
+labels:
+  - "bm25"
+  - "dense"
+  - "hybrid"

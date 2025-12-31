@@ -1,0 +1,9 @@
+transformers
+datasets
+accelerate
+peft
+bitsandbytes
+scikit-learn
+pyyaml
+tqdm
+numpy
