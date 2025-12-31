@@ -6,6 +6,9 @@ import yaml
 from functools import partial
 from src.core.util import load_and_format
 from src.path_util import get_model_dir
+from src.logger_util import get_logger
+
+logger = get_logger('train')
 
 def tokenizer_func(ex, tokenizer):
     full_text = ex['prompt'] + ex['target']
@@ -22,9 +25,13 @@ def train():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',
                         required=True)
+    parser.add_argument("--num_train_epochs", type=float)
     args = parser.parse_args()
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
+    if args.num_train_epochs is not None:
+        logger.info(f'updating num_train_epochs to {args.num_train_epochs}')
+        config["training_params"]["num_train_epochs"] = args.num_train_epochs
 
     tokenizer = AutoTokenizer.from_pretrained(config['model'])
     data_formatted = load_and_format(config)
