@@ -10,48 +10,38 @@ from src.logger_util import get_logger
 
 logger = get_logger('train')
 
-def tokenizer_func(ex, tokenizer, max_length: int = 512):
+def tokenizer_func(ex, tokenizer, MAX_LEN=512):
+    # Build full text and prompt-only text
     full_text = ex["prompt"] + ex["target"]
     prompt_text = ex["prompt"]
 
-    # Ensure we have a pad token (Phi-3 often uses eos as pad)
-    if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
-        tokenizer.pad_token = tokenizer.eos_token
+    # Tokenize both
+    full_enc = tokenizer(full_text, truncation=True, padding=False)
+    prompt_enc = tokenizer(prompt_text, truncation=True, padding=False)
 
-    # Tokenize to fixed length so every example is max_length
-    full_enc = tokenizer(
-        full_text,
-        padding="max_length",
-        truncation=True,
-        max_length=max_length,
-    )
-    prompt_enc = tokenizer(
-        prompt_text,
-        padding="max_length",
-        truncation=True,
-        max_length=max_length,
-    )
-
-    input_ids = full_enc["input_ids"]
-    pad_id = tokenizer.pad_token_id
-
-    # Count non-pad prompt tokens
+    full_ids = full_enc["input_ids"]
     prompt_ids = prompt_enc["input_ids"]
-    prompt_len = sum(1 for t in prompt_ids if t != pad_id)
+    prompt_len = len(prompt_ids)
 
-    # Labels: ignore prompt tokens, train only on completion
-    labels = [-100] * prompt_len + input_ids[prompt_len:]
+    # Build labels: prompt → -100
+    labels = [-100] * prompt_len + full_ids[prompt_len:]
 
-    # Pad labels out to max_length with -100 (ignore padded tail)
-    if len(labels) < max_length:
-        labels = labels + [-100] * (max_length - len(labels))
-    else:
-        labels = labels[:max_length]
+    # Now pad BOTH to MAX_LEN
+    full_ids = full_ids[:MAX_LEN]
+    labels = labels[:MAX_LEN]
 
-    assert len(labels) == len(input_ids) == max_length
+    # pad end with pad_token + -100
+    pad_id = tokenizer.pad_token_id or tokenizer.eos_token_id
 
-    full_enc["labels"] = labels
-    return full_enc
+    while len(full_ids) < MAX_LEN:
+        full_ids.append(pad_id)
+        labels.append(-100)
+
+    return {
+        "input_ids": full_ids,
+        "attention_mask": [1 if i != pad_id else 0 for i in full_ids],
+        "labels": labels,
+    }
 
 
 def train():
@@ -94,20 +84,21 @@ def train():
         model_to_train = model
 
     training_args = TrainingArguments(**config['training_params'])
-
     trainer = Trainer(
         model=model_to_train,
         args=training_args,
         train_dataset=data_tokenized,
-        tokenizer=tokenizer
+        tokenizer=tokenizer,
     )
-
+    logger.info('training starts')
     trainer.train()
 
     output_dir = get_model_dir(config['task'])
     output_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f'saving model down to {output_dir.as_posix()}')
     trainer.save_model(output_dir.as_posix())
 
 if __name__ == '__main__':
     train()
 
+6
