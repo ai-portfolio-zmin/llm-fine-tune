@@ -7,10 +7,10 @@ import json
 def format_example(example) -> dict:
     query = example['query']
     features = example['context']
-    label = example['label']
+    route = example['route']
 
     prompt = Template.format(query=query, features=json.dumps(features))
-    target = json.dumps({'route': label})
+    target = json.dumps({'route': route})
     return {'prompt': prompt, 'target': target}
 
 

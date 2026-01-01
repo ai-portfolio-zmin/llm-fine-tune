@@ -26,14 +26,18 @@ def train():
     parser.add_argument('--config',
                         required=True)
     parser.add_argument("--num_train_epochs", type=float)
+    parser.add_argument("--data_set", type=str)
     args = parser.parse_args()
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     if args.num_train_epochs is not None:
         logger.info(f'updating num_train_epochs to {args.num_train_epochs}')
         config["training_params"]["num_train_epochs"] = args.num_train_epochs
+    if args.data_set is not None:
+        logger.info(f'updating data_set to {args.data_set}')
+        config["data_set"] = args.data_set
 
-    tokenizer = AutoTokenizer.from_pretrained(config['model'])
+    tokenizer = AutoTokenizer.from_pretrained(config['model_name'])
     data_formatted = load_and_format(config)
     data_tokenized = data_formatted.map(partial(tokenizer_func, tokenizer=tokenizer),
                                         remove_columns=data_formatted.column_names)

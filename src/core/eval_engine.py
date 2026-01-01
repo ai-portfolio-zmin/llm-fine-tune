@@ -21,9 +21,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',
                         required=True)
+    parser.add_argument("--data_set", type=str)
     args = parser.parse_args()
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
+    if args.data_set is not None:
+        logger.info(f'updating data_set to {args.data_set}')
+        config["data_set"] = args.data_set
 
     model_dir = get_model_dir(config['task'])
 
@@ -82,7 +86,7 @@ def main():
     result['recall'] = recall_score(y_true, y_pred, average="macro")
 
     logger.info(f'eval result: {result}')
-    output_file = get_output_dir(config['task']) / 'result.json'
+    output_file = get_output_dir(config['task']) / f'{config["data_set"]}_result.json'
     with open(output_file, 'w') as f:
         f.write(json.dumps(result))
 
