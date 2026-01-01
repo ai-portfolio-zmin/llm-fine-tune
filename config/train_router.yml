@@ -19,20 +19,19 @@ lora_params:
   target_modules:
     - "o_proj"
     - "qkv_proj"
-  bias: null
+  bias: "none"
   task_type: 'CAUSAL_LM'
 
 training_params:
-  eval_strategy: "epoch"
+  eval_strategy: "no"
   save_strategy: "no"
-  learning_rate: 2e-5
+  learning_rate: 0.00002
   per_device_train_batch_size: 8
-  per_device_eval_batch_size:
+  per_device_eval_batch_size: 8
   num_train_epochs: 1
   weight_decay: 0.01
   logging_steps: 50
   load_best_model_at_end: false
-  max_seq_length:
   gradient_accumulation_steps: 1
   warmup_ratio: 0.0
   seed: 42

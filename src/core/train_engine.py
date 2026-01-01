@@ -10,15 +10,48 @@ from src.logger_util import get_logger
 
 logger = get_logger('train')
 
-def tokenizer_func(ex, tokenizer):
-    full_text = ex['prompt'] + ex['target']
-    prompt_text = ex['prompt']
-    full_text_tokenized = tokenizer(full_text)
-    prompt_text_tokenized = tokenizer(prompt_text)
-    prompt_token_len = len(prompt_text_tokenized['input_ids'])
-    labels = [-100] * prompt_token_len + full_text_tokenized['input_ids'][prompt_token_len:]
-    full_text_tokenized['labels'] = labels
-    return full_text_tokenized
+def tokenizer_func(ex, tokenizer, max_length: int = 512):
+    full_text = ex["prompt"] + ex["target"]
+    prompt_text = ex["prompt"]
+
+    # Ensure we have a pad token (Phi-3 often uses eos as pad)
+    if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    # Tokenize to fixed length so every example is max_length
+    full_enc = tokenizer(
+        full_text,
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+    )
+    prompt_enc = tokenizer(
+        prompt_text,
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+    )
+
+    input_ids = full_enc["input_ids"]
+    pad_id = tokenizer.pad_token_id
+
+    # Count non-pad prompt tokens
+    prompt_ids = prompt_enc["input_ids"]
+    prompt_len = sum(1 for t in prompt_ids if t != pad_id)
+
+    # Labels: ignore prompt tokens, train only on completion
+    labels = [-100] * prompt_len + input_ids[prompt_len:]
+
+    # Pad labels out to max_length with -100 (ignore padded tail)
+    if len(labels) < max_length:
+        labels = labels + [-100] * (max_length - len(labels))
+    else:
+        labels = labels[:max_length]
+
+    assert len(labels) == len(input_ids) == max_length
+
+    full_enc["labels"] = labels
+    return full_enc
 
 
 def train():
