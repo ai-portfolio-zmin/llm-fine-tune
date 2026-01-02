@@ -86,7 +86,7 @@ def main():
             )
 
         full_tokens = output_i[0]
-        prompt_len = data_tokenized_i['input_ids'].shape[1]
+        prompt_len = len(data_tokenized_i['input_ids'])
         gen_tokens = full_tokens[prompt_len:]
 
         output_text = tokenizer.decode(gen_tokens, skip_special_tokens=True)
