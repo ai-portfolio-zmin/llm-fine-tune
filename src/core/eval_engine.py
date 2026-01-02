@@ -113,7 +113,10 @@ def main():
                          f'Prompt:{data_formatted_i["prompt"]}')
             continue
 
-    gen_result = {k:{'target':target, 'predict':predict} for k, target, predict in zip(user_input,y_true,y_pred)}
+    gen_result = [
+        {"input": k, "target": target, "predict": predict}
+        for k, target, predict in zip(user_input, y_true, y_pred)
+    ]
     gen_output_file = get_output_dir(config['task']) / f'{config["data_set"]}_gen_result.json'
     with open(gen_output_file, 'w') as f:
         f.write(json.dumps(gen_result))
