@@ -118,6 +118,7 @@ def main():
         for k, target, predict in zip(user_input, y_true, y_pred)
     ]
     gen_output_file = get_output_dir(config['task']) / f'{config["data_set"]}_gen_result.json'
+    gen_output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(gen_output_file, 'w') as f:
         f.write(json.dumps(gen_result))
 
@@ -130,6 +131,7 @@ def main():
 
     logger.info(f'eval result: {result}')
     output_file = get_output_dir(config['task']) / f'{config["data_set"]}_result.json'
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, 'w') as f:
         f.write(json.dumps(result))
 
