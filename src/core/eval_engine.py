@@ -61,6 +61,7 @@ def main():
 
     y_true = []
     y_pred = []
+    user_input = []
     gen_params = config.get("generate_params", {})
     gen_params.setdefault("max_new_tokens", 32)
     gen_params.setdefault("pad_token_id", tokenizer.eos_token_id)
@@ -106,10 +107,16 @@ def main():
                 target_dict = data_formatted_i['target']
             y_pred.append(eval_func.get_label(output_dict))
             y_true.append(eval_func.get_label(target_dict))
+            user_input.append(data_formatted_i['input'])
         else:
             logger.error(f'Output not passing validation: {output_dict}'
                          f'Prompt:{data_formatted_i["prompt"]}')
             continue
+
+    gen_result = {k:{'target':target, 'predict':predict} for k, target, predict in zip(user_input,y_true,y_pred)}
+    gen_output_file = get_output_dir(config['task']) / f'{config["data_set"]}_gen_result.json'
+    with open(gen_output_file, 'w') as f:
+        f.write(json.dumps(gen_result))
 
     result = {}
     labels = config['labels']

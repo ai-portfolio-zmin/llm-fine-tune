@@ -11,7 +11,7 @@ def format_example(example) -> dict:
 
     prompt = Template.format(query=query, features=json.dumps(features))
     target = json.dumps({'route': route})
-    return {'prompt': prompt, 'target': target}
+    return {'prompt': prompt, 'target': target,'input':query}
 
 
 def load_data(mode='train'):
