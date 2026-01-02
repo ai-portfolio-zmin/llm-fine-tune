@@ -74,7 +74,7 @@ def main():
         i += 1
 
         # move inputs to GPU
-        inputs = {k: v.to(model.device) for k, v in data_tokenized_i.items()}
+        inputs = {k: torch.tensor(v).to(model.device) for k, v in data_tokenized_i.items()}
 
         # generation
         with torch.no_grad():
