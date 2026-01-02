@@ -58,7 +58,6 @@ def main():
         remove_columns=data_formatted.column_names,
     )
     eval_func = importlib.import_module(f'src.tasks.{config["task"]}.eval')
-
     y_true = []
     y_pred = []
     user_input = []
@@ -86,11 +85,13 @@ def main():
             )
 
         full_tokens = output_i[0]
-        prompt_len = len(data_tokenized_i['input_ids'])
+        prompt_len = inputs["input_ids"].shape[1]
         gen_tokens = full_tokens[prompt_len:]
 
-        output_text = tokenizer.decode(gen_tokens, skip_special_tokens=True)
-
+        output_text_long = tokenizer.decode(gen_tokens, skip_special_tokens=True)
+        print(output_text_long)
+        output_text = eval_func.extract_output(output_text_long)
+        print(output_text)
         if i % 50 == 0:
             logger.info(f'output text (truncated): {output_text[:200]}')
         try:

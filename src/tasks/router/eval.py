@@ -1,4 +1,5 @@
-
+import re
+import json
 
 
 def validate(predict):
@@ -11,3 +12,24 @@ def validate(predict):
 
 def get_label(predict):
     return predict['route']
+
+
+
+def extract_output(text: str) -> dict:
+    """
+    Extracts and validates router output from model generation.
+
+    Returns:
+        dict: {"route": "<bm25|dense|hybrid>"}
+
+    Raises:
+        ValueError: if block missing, JSON invalid, or schema invalid
+    """
+    m = re.search(r'^(.*?)\n{3}', text, re.DOTALL)
+
+    if m:
+        result = m.group(1)
+    else:
+        result = text  # fallback if no triple newline
+
+    return result

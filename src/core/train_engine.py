@@ -62,6 +62,8 @@ def train():
 
     tokenizer = AutoTokenizer.from_pretrained(config['model_name'])
     data_formatted = load_and_format(config)
+    logger.info(f'sample prompt: {data_formatted[0]["prompt"]}')
+    logger.info(f'sample target: {data_formatted[0]["target"]}')
     data_tokenized = data_formatted.map(partial(tokenizer_func, tokenizer=tokenizer),
                                         remove_columns=data_formatted.column_names)
     if config['with_quantization']:
@@ -100,5 +102,3 @@ def train():
 
 if __name__ == '__main__':
     train()
-
-6
