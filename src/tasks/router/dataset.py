@@ -1,5 +1,5 @@
 from src.path_util import get_data_path
-from src.tasks.router.format import Template
+from src.tasks.router.prompt import Template
 from datasets import load_dataset
 import json
 

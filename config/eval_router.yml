@@ -2,11 +2,20 @@ task: "router"
 
 model_name: "microsoft/phi-3-mini-4k-instruct"
 
-data_set: "val"
+eval_set: "val"
+train_set: 'debug'
+
 with_lora: true
 
+with_quantization: true
+quantization_params:
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: True
+  bnb_4bit_compute_dtype: "bfloat16"
+
 generate_params:
-  max_new_tokens: 32
+  max_new_tokens: 16
 
 labels:
   - "bm25"

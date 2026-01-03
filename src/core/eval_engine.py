@@ -1,9 +1,9 @@
 import argparse
 import json
 import yaml
-from src.path_util import get_model_dir, get_output_dir
+from src.path_util import get_model_dir, get_output_dir, get_hl_cache_dir
 from peft import PeftModel
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from src.core.util import load_and_format
 from functools import partial
 import importlib
@@ -28,34 +28,52 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config',
                         required=True)
-    parser.add_argument("--data_set", type=str)
+    parser.add_argument("--eval_set", type=str)
+    parser.add_argument("--train_set", type=str)
     args = parser.parse_args()
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
-    if args.data_set is not None:
-        logger.info(f'updating data_set to {args.data_set}')
-        config["data_set"] = args.data_set
+    if args.eval_set is not None:
+        logger.info(f'updating eval_set to {args.eval_set}')
+        config["eval_set"] = args.eval_set
+    if args.train_set is not None:
+        logger.info(f'updating train_set to {args.train_set}')
+        config["train_set"] = args.train_set
     max_len = config.get("max_length", 512)
-    model_dir = get_model_dir(config['task'])
+    model_dir = get_model_dir(config)
 
     logger.info(f'loading {config["model_name"]} on GPU')
-    base = AutoModelForCausalLM.from_pretrained(config['model_name'],
-                                                device_map="auto",
-                                                torch_dtype="bfloat16"
-                                                )
-    logger.info(f'loading PEFT')
+    if config['with_quantization']:
+        bnb_config = BitsAndBytesConfig(**config['quantization_params'])
+        base = AutoModelForCausalLM.from_pretrained(
+            config['model_name'],
+            quantization_config=bnb_config,
+            device_map="auto",
+            cache_dir=get_hl_cache_dir().as_posix()
+        )
+    else:
+        base = AutoModelForCausalLM.from_pretrained(
+            config['model_name'],
+            device_map="auto",
+            torch_dtype="bfloat16",
+            cache_dir=get_hl_cache_dir().as_posix()
+        )
+    logger.info(f'loading adaptor from {model_dir}')
     model = PeftModel.from_pretrained(base, model_dir)
     model.eval()
 
-    tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
+    tokenizer = AutoTokenizer.from_pretrained(config["model_name"],
+                                              cache_dir=get_hl_cache_dir().as_posix()
+                                              )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     logger.info(f'formatting data')
-    data_formatted = load_and_format(config)
+    data_formatted = load_and_format(config,'eval_set')
     data_tokenized = data_formatted.map(
         partial(tokenizer_func, tokenizer=tokenizer, max_length=max_len),
         remove_columns=data_formatted.column_names,
+        load_from_cache_file=False
     )
     eval_func = importlib.import_module(f'src.tasks.{config["task"]}.eval')
     y_true = []
@@ -89,9 +107,7 @@ def main():
         gen_tokens = full_tokens[prompt_len:]
 
         output_text_long = tokenizer.decode(gen_tokens, skip_special_tokens=True)
-        print(output_text_long)
         output_text = eval_func.extract_output(output_text_long)
-        print(output_text)
         if i % 50 == 0:
             logger.info(f'output text (truncated): {output_text[:200]}')
         try:
@@ -118,7 +134,7 @@ def main():
         {"input": k, "target": target, "predict": predict}
         for k, target, predict in zip(user_input, y_true, y_pred)
     ]
-    gen_output_file = get_output_dir(config['task']) / f'{config["data_set"]}_gen_result.json'
+    gen_output_file = get_output_dir(config['task']) / f'{config["train_set"]}_{config["eval_set"]}_gen_result.json'
     gen_output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(gen_output_file, 'w') as f:
         f.write(json.dumps(gen_result))
@@ -131,7 +147,7 @@ def main():
     result['recall'] = recall_score(y_true, y_pred, average="macro")
 
     logger.info(f'eval result: {result}')
-    output_file = get_output_dir(config['task']) / f'{config["data_set"]}_result.json'
+    output_file = get_output_dir(config['task']) / f'{config["train_set"]}_{config["eval_set"]}_result.json'
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, 'w') as f:
         f.write(json.dumps(result))
