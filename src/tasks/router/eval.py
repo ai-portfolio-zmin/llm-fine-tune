@@ -25,11 +25,6 @@ def extract_output(text: str) -> dict:
     Raises:
         ValueError: if block missing, JSON invalid, or schema invalid
     """
-    m = re.search(r'^(.*?)\n{3}', text, re.DOTALL)
-
-    if m:
-        result = m.group(1)
-    else:
-        result = text  # fallback if no triple newline
-
-    return result
+    s = text.find('{')
+    e = text.find('}')+1
+    return text[s:e]

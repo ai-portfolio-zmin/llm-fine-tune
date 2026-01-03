@@ -4,3 +4,5 @@ __pycache__/
 data_gen.ipynb
 .idea/
 hf_cache/
+venv/
+output/
