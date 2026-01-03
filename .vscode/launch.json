@@ -1,0 +1,53 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Eval Engine (module)",
+      "type": "python",
+      "request": "launch",
+      "module": "src.core.eval_engine",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "HF_HOME": "/workspace/hf_cache",
+        "HF_HUB_CACHE": "/workspace/hf_cache/hub",
+        "TRANSFORMERS_CACHE": "/workspace/hf_cache/transformers",
+        "HF_DATASETS_CACHE": "/workspace/hf_cache/datasets",
+        "TOKENIZERS_PARALLELISM": "false"
+      },
+      "args": [
+        "--config",
+        "config/eval_router.yml",
+        "--train_set",
+        "debug",
+        "--eval_set",
+        "debug"
+      ]
+    },
+    {
+      "name": "Train Engine (module)",
+      "type": "python",
+      "request": "launch",
+      "module": "src.core.train_engine",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "HF_HOME": "/workspace/hf_cache",
+        "HF_HUB_CACHE": "/workspace/hf_cache/hub",
+        "TRANSFORMERS_CACHE": "/workspace/hf_cache/transformers",
+        "HF_DATASETS_CACHE": "/workspace/hf_cache/datasets",
+        "TOKENIZERS_PARALLELISM": "false"
+      },
+      "args": [
+        "--config",
+        "config/train_router.yml",
+        "--train_set",
+        "debug"
+      ]
+    }
+  ]
+}

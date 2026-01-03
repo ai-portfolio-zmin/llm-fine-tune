@@ -5,7 +5,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model
 import yaml
 from functools import partial
-from src.core.util import load_and_format, tokenizer_func
+from src.core.util import load_and_format, tokenizer_func, CausalLMWithLabelsCollator
 from src.path_util import get_model_dir, get_hl_cache_dir
 from src.logger_util import get_logger
 
@@ -30,9 +30,13 @@ def train():
     if args.learning_rate is not None:
         logger.info(f'updating learning_rate to {args.learning_rate}')
         config["training_params"]["learning_rate"] = args.learning_rate
-
     logger.info(f'config:\n{json.dumps(config, indent=2)}')
+
     tokenizer = AutoTokenizer.from_pretrained(config['model_name'], cache_dir=get_hl_cache_dir().as_posix())
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
+
     data_formatted = load_and_format(config, 'train_set')
     logger.info(f'sample prompt: {data_formatted[0]["prompt"]}')
     logger.info(f'sample target: {data_formatted[0]["target"]}')
@@ -60,12 +64,14 @@ def train():
     else:
         model_to_train = model
 
+    data_collator = CausalLMWithLabelsCollator(tokenizer)
     training_args = TrainingArguments(**config['training_params'])
     trainer = Trainer(
         model=model_to_train,
         args=training_args,
         train_dataset=data_tokenized,
         tokenizer=tokenizer,
+        data_collator=data_collator
     )
     logger.info('training starts')
     trainer.train()
