@@ -19,7 +19,7 @@ separation between:
 - Task-specific definitions (datasets, prompts, evaluation rules)
 
 This allows new decision tasks to be added with minimal changes to the core
-pipeline.[README.md](..%2Fagentflow%2FREADME.md)
+pipeline.
 
 At present, the platform supports:
 - LoRA adapter fine-tuning
